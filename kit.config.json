@@ -1,0 +1,4 @@
+{
+  "github": { "owner": "triozen-tech", "sshHost": "github-triozen", "private": false, "userName": "triozen-tech", "userEmail": "triozen.tech@gmail.com" },
+  "ports": { "from": 3001, "to": 3099 }
+}

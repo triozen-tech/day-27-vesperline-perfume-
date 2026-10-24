@@ -1,0 +1,239 @@
+# Lessons — read this first, every day and every round
+
+Short rules learned the hard way on Days 1–7. `/new-site` and every round start by reading this file. At the end of each day (`archive-day`), add that day's new lessons at the bottom (rule + a few words why).
+
+## Video & frames
+1. **Scroll videos play by video time, never by frame number.** Map scroll → video seconds (segments), keep `times` in the manifest. Why: frame-number mapping made fast parts jump and slow parts crawl.
+2. **No frame-scrub stutter:** draw the two neighbour frames blended (fractional opacity), interpolate the source to 48 fps, and give fast/key moments 24–48 fps. Why: the camera sees every stepped frame as a stutter.
+3. **Preload before the loader ends:** the hero's frames all load while the loader shows (`blockLoader`); the loader's percentage is the real load. Other films load lazily, and big ones start during a **calm** section (`loadWhen`) so a loading burst never lands during another video.
+4. **No delay after the loader:** the hero starts moving on the loader's last frame (an intro that plays by itself into the scroll). A still hero waiting for the scroll looks frozen.
+5. **Fade every video edge** into the page colour (in the player, not CSS masks) and grade the video's black onto the page background. Why: hard straight video edges showed as lines (Day 7 fog edge, ice top edge).
+6. **Use the early seconds of a Veo clip** and measure the landmark times on a contact sheet (pop frame, colour change). Never guess; text that switches with the video uses the measured second (e.g. "half the can changed").
+7. **Crop/paint out the Veo watermark** (bottom right) in every clip.
+
+## Never frozen on camera (`?record=1` at 1440×900 must PASS freezedetect + frame-diff)
+8. **Holds are never still:** during a record hold the section pushes in slowly (`HoldPush`), ambient motion runs (rain, glow, mist), or the hold is shorter.
+9. **Scrubbed effects use the whole scroll range, linearly, and finish exactly at the end.** No flat start/end and no early finish: a sticky stage itself does not move, so a finished effect = frozen frames. Add time-based life (drift, shimmer, noise) to every scrubbed stage.
+10. **Stepped effects must be continuous** (pixelation, counters): steps hold a frame for 0.3 s+ and fail frame-diff.
+11. **The first second:** before the page's JavaScript wakes up only CSS moves; the loader/first screen needs CSS animation from the first paint.
+12. **A failed check on a busy machine is not a site bug:** under ~50 fps captured → check `uptime`, wait, re-run before changing code. Look at the flagged frames first.
+13. Real-time hits (word slams, flashes) fire when the video **crosses** the beat, so they stay punchy at any scroll speed.
+
+## Transitions & sections
+14. **No empty gaps between sections:** a dark band (section padding before the photo, a curtain lifting late) reads as a broken site. Hand over with a transition (frost/zoom-through, overlap) and start reveals **before** the content reaches the screen.
+15. **Pinned cards/overlays leave with their section** (fade/lift as it scrolls away); nothing hangs at the top while the next section arrives.
+16. **Text over bright video must stay readable:** a soft dark gradient/pool behind the text only (left on desktop, bottom on phone), never a dull filter over the whole video.
+17. **Shattered/tiled effects:** draw the sheet as ONE piece until it breaks (no seams), and broken tiles are light frost, never a copy of the dark picture underneath (no dark boxes).
+
+## Phones (RETIRED: the kit is desktop only, 1440×900; rules 18–20 no longer apply)
+18. **Phone crops come from the subject's position, for every size:** measure the product's box in the frames and fit it into the free area measured from the page (nav → text/card). Never a fixed crop; test 360×640, 375×667, 352×681, 390×844, 430×932 and a short laptop (1366×768).
+19. **Switch frame sets when the window crosses 768px** (a laptop-loaded page resized to phone width must load the phone frames).
+20. **Nothing overlaps the subject** (cards go fully below the product; buttons above or below it).
+
+## Recording & publishing
+21. **Reels are recorded only on the laptop** at exactly 1440×900 (`npm run reel`); desktop only, no phone checks.
+22. **Covers: keep inside Instagram's safe area** (3:4 grid crop ≈13% top/bottom, Reels header top 14%, caption bottom 25%, icons on the right); headline 15–40% from the top (`cover-check`).
+23. **No real-brand look-alikes:** real brand names are fine for concept sites, but never their logo file, their real website's layout, or their exact packaging; always the "Concept website" footer note.
+24. **Each day's repo holds only that day:** one fresh commit (orphan branch) pushed to its own GitHub repo; no older brands in files or history.
+
+## Kit & tools
+25. Register GSAP plugins only in `lib/gsap.ts`; Lenis stays the scroller (no ScrollSmoother). Prefer plugins (SplitText, ScrambleText, DrawSVG, Flip, MorphSVG) over hand-made versions.
+26. WebGL (OGL via `lib/gl.ts`) only in sections that use it, always over a plain image/CSS fallback; budget +60 KB gzipped.
+27. Components that take a `className` must not hard-code `relative` when the caller may pass `absolute` (the clash collapses the box to 0 height). Use `pos()` from `components/fx/shared.ts`.
+28. Headless recorders and test browsers must always be killed after use (stray Chromes pushed the load to 90 and spoiled recordings).
+
+## 3D & travelling objects (kit upgrade before Day 8)
+29. **3D budget reality:** three.js alone is ~150 KB gzip, React Three Fiber pulls ALL of three (+261 KB measured), `<model-viewer>` bundles three (+336 KB). Only **OGL** (+40 KB) fits the +150 KB budget. Default to F1 (PNG) or F3 on OGL; the others are for comparison/special cases.
+30. **Never use drei `ScrollControls`** (or any library scroller) with Lenis: it creates its own scroll container and breaks record mode. Drive 3D from our travel driver / ScrollTrigger progress.
+31. **One driver, many renderers:** tween a plain state object with the scroll, then apply it to the PNG / mesh / model-viewer every frame. Never tween meshes directly.
+32. **Model files:** compress every .glb (`npm run glb`, ≤ 3 MB). Meshopt needs a decoder: for OGL and `<model-viewer>` use `--ogl` (plain geometry + WebP), or model-viewer fetches its decoder from a CDN and shows nothing offline.
+33. **Background removal:** always pass the model (`-m birefnet-general`, MIT). rembg's newest default (RMBG-2.0) needs a paid licence for commercial use.
+34. **Licences change:** check every source on its real repo (GitHub API `license.spdx_id`, the LICENSE file) on the day; e.g. React Bits = MIT + Commons Clause, Hunyuan3D excludes EU/UK/KR, Theatre.js studio is AGPL.
+35. **The first and last screens need their own motion:** the first ~0.5 s (3D/JS still loading) and the end of the reel (scroll at rest) fail the freeze check unless something moves there (CSS light, marquee).
+
+## Craft rules (from open-source design skills, MIT; see SOURCES)
+36. **Never animate from `scale(0)`:** start at 0.9–0.95 with opacity. Keep animated blur ≤ 8px (static ≤ 20px); never animate `backdrop-filter`; set `will-change` just before an animation and remove it after.
+37. **Hover never changes font-weight, letter-spacing or padding** (layout jumps): cross-fade a pre-rendered layer instead.
+38. **Display type ≥ 24px:** tracking −0.02 to −0.04em, line-height 1.05–1.2; caps labels +0.05 to +0.1em; `text-wrap: balance` on headings, `pretty` on body; italic display words with descenders need line-height ≥ 1.1.
+39. **Every scroll depth shows a complete frame:** never animate the whole stage to empty; text being read holds still; idle drift stays visibly smaller than the scroll-driven change.
+40. **Template tells to avoid** (unless DESIGN.md chose them on purpose): an eyebrow above every heading, "01 / 02" section eyebrows that are not a real sequence, three identical feature cards, three or more zig-zag splits in a row, "Scroll ↓" cues, city/time strips, decorative crosshair grid lines, mixed pill and square radii without a rule, em-dashes everywhere.
+41. **Category-reflex check:** if the palette can be guessed from the product category alone, rework it. Gradients: `linear-gradient(in oklch, …)` (no muddy middles); tint shadows with the background hue.
+
+42. **rembg on macOS hangs with no error** when it enables Apple's CoreML engine: `npm run cutout` forces the CPU (scripts/cutout.py). BiRefNet on CPU ≈ 2 min for a 2.7k image (`--fast` u2net ≈ 1 s). Frost/condensation/glass come out semi-transparent: shoot cut-out angles of frosty or glassy products on a plain mid-grey background and check on dark AND light.
+
+<!-- Add new lessons below this line at the end of each day: "N. rule — why (Day NN)". -->
+
+43. **Look at every raw file on a contact sheet before planning around it** — the brief's `ganache-pour.mp4` was a second layer-build clip; the real pour was still in Downloads (Day 08).
+44. **Light pages: copy `lib/film.ts` into the site and erase the film edges to transparent** (`destination-out`), never paint a dark page colour; measure the films' backdrop and use it as the page bg (`grade: false` in frames.json) — the kit player assumes a dark page (Day 08).
+45. **A finished CSS animation (`forwards`) beats GSAP's inline styles**: before animating `clip-path`/`transform` that CSS animated, copy the computed values inline and set `animation: none` — the loader's exit wipe silently never ran (Day 08).
+46. **Site CSS on component classes goes in `@layer components`**: unlayered `display`/`flex-direction` rules beat Tailwind utilities (`hidden`, `flex-row`), so phone-hidden toggles and row tiles broke (Day 08).
+47. **Consecutive loader/colour layers must differ in brightness**: pink over pistachio (same luma) reads as "no change" to frame-diff and to the eye on a dim screen (Day 08).
+48. **State machines start where the first callback expects**: a child FilmPin reports its first second before the parent's effect runs; the hero word queue started on "cake" and melted backwards cake → crème → jam → base (Day 08).
+49. **Morphing words: every word sharp ≥ 0.4 s, the goo filter only while melting, and a pinned hold after the last beat** so the final word settles before the section leaves (Day 08).
+50. **Hard cut between two films (X5)**: pull the next section up one screen, keep its stage hidden until its top reaches the top, and start its film framed exactly like the previous last frame (same scale and position), then ease it to its own place. Without the hiding, the next stage slides up over the pinned one (Day 08).
+51. **Holds right before a cut or a zero-distance stop run on the clock, not the scroll**: the record scroll decelerates into the stop, so a scroll-tied push-in stands still there (Day 08).
+52. **Shop grids never Flip-reflow their tiles**: `Flip` + dense grid (+ `absolute`) collapses the grid and tiles drift out with text covered. Keep tiles fixed, Flip a highlight frame, swap the detail ticket's content (text away ≤ 0.3 s) (Day 08).
+53. **Thrown/floating objects land only in free space** (never over headings or the subject); phones get fewer objects, landing in the top corners (Day 08).
+54. **Record on a quiet machine**: another session's ffmpeg encode dropped capture to 30–46 fps. Wait for no `ffmpeg` (`pgrep -x ffmpeg`; `pgrep -f` matches its own command line) and load < 6, re-record below 50 fps (Day 08).
+55. **Fine textures don't register at frame-diff's 160×90 scale** (sprinkle particles, thin shimmer): give a resting end screen a coarse moving element (ticker strip, a broad light band) (Day 08).
+56. **A mirrored half-turn is not the second half of a spin**: a mirrored copy of a 0→180° clip plays the turn back the other way and moves the rim light to the other edge. Cut at the measured true 180° (the frame that best matches the mirrored start), then blend both seams over ~6 frames (Day 09).
+57. **The reel must be exactly 1440×900**: headless Chrome keeps ~90 px of its window for browser chrome, so the window needs spare height while the page is emulated at 1440×900; `npm run reel` now fails any other size (Day 09).
+58. **Restart the production server with `pkill -f next-server`**: `pkill -f "next start"` misses it, the stale server serves old chunk names, the page never hydrates and the loader hangs; a capture with no timeline is never a PASS (Day 09).
+59. **Recorder-only freezes come from the GPU, not the main thread**: a full-size canvas `ctx.filter` blur and a hidden film canvas decoding frames each froze the screencast for 0.5–0.7 s with no long tasks. Blur at quarter size and upscale; keep an off-screen film canvas out of the render tree (`display: none`) until just before its cut (Day 09).
+60. **Words read in a reel at ~40 px**: callouts, labels, prices and quotes at 40 px (prices 48), short words, one line each; 12–18 px mono only for meta that nobody needs to read on camera (Day 09).
+61. **Pinned → pinned handovers happen in place, one at a time**: never let a pinned stage scroll up under the nav. Keep the outgoing stage pinned one more screen and fade it out first; pull the next section up over that screen, hold its stage at the top and fade it in only after; no frame with text over text (Day 09).
+62. **A travelling object that lands on a video subject lands as the video appears** and dissolves into it in ~0.4 s, so the cut-out and the video's own copy are never both visible (Day 09).
+63. **Scramble/decode text ≤ 0.3 s on camera**: longer reads as a glitch ("TW00111011") (Day 09).
+64. **A self-playing intro must keep going until the scroll overtakes it**: linear and long (e.g. 10°/s up to 90°), shown time = max(scroll, intro); an intro that ends early leaves a dead second between the loader and the scroll (Day 09).
+65. **Letterbox cuts ≤ 0.6 s and never a thin black slit**: a closed slit held for a beat reads as a black freeze; dark bars on a dark page need a visible (lilac) gate edge (Day 09).
+66. **A sticky "revealed under the page" footer is always in view geometrically**: trigger its effects by scroll position, and put its record stop on an element after it, not on the sticky footer (Day 09).
+67. **GSAP `from()` in React effects can stick at the from-state** (strict-mode mount → kill → remount re-reads the half-set value): use `fromTo()` (Day 09).
+68. **Veo "start = end frame" loops still pop**: measure first vs last frame against a normal frame step and bake a short crossfade loop (12 frames) into the web file (Day 09).
+69. **Never honour the OS reduce-motion setting; only `?static=1` disables motion.** It is ON by default on many Windows machines, so live sites opened as flat static pages (no loader, no scrub, no scroll motion). `prefersReducedMotion()` (lib/gsap.ts) is `?static` only; CSS uses `html.is-static { … }` (set by the engine) instead of the media query; `npm run check` fails on any `prefers-reduced-motion` / reduce `matchMedia` (found by a viewer, after Day 09).
+
+70. **The record check needs ≥ 0.15 grey levels of change per frame (160×90, 30 fps)**: measure it (`ffmpeg … scale=160:90,format=gray` → mean abs frame diff) before adding "life". Thin glows, fine edges and slow push-ins measured 0.02–0.13 and still failed (Day 10).
+71. **A page-wide firelight keeps every short hold alive**: a fixed, very low-alpha warm layer whose opacity wavers on an irregular LINEAR CSS loop (≈ 2.3 s, no flat stretch), from the first paint. Use `mix-blend-mode: screen` so it only adds light and never dims the product; on light bands it adds almost nothing, so give those sections their own coarse motion (Day 10).
+72. **Never darken a picture to "spotlight" it**: a dark overlay outside a light circle made the dish 37.8 mean luma against 57.7 for the plain picture. Light is added (screen-blend glow), never subtracted; check page vs source brightness on the same crop (Day 10).
+73. **Odometer digits: a higher digit only turns while the digits below roll 9 → 0** (`base = floor(v/place) % 10`, `turn = clamp(v % place − (place − 1))`); `(v/place) % 10` for every column landed "480" as "580". Size each digit cell to its FINAL digit (a proportional "1" left a gap: "1 4h"), and keep the suffix's space as a non-breaking space inside flex (Day 10).
+74. **Holds ≤ 1.2 s, and timed sequences must land inside them**: a scripted step list (booking, ticks, caption) starts early in the arrival move so its last step is on screen before the page moves on; check the landing frame, not only PASS (Smoke ticked and the caption rose ~0.3 s before the hero left) (Day 10).
+75. **Hands-free demos of click-only UI run in `?record=1` only** (`isRecording()`); in normal mode nothing changes by itself. Start them from a ScrollTrigger on the section, not from the record hold event, so they also fill the arrival (Day 10).
+76. **Tilting tall sections pushes the page sideways**: a 0.8° tilt on a pinned section ~5 screens tall made the page 58 px wider and the reel came out 1278×900. Set `html, body { overflow-x: clip }` (`clip`, unlike `hidden`, keeps sticky pins working) and probe `scrollWidth` at several depths (Day 10).
+77. **Effects at the very foot of the page play on the clock once they are on screen**, not scroll-tied: a footer wordmark tied to the footer's scroll finished while still below the viewport (Day 10).
+78. **Same-uv sampling for pixel-aligned image pairs**: a raw → cooked burn samples both textures at the identical uv and cover-fit (no breathing drift), and both images get the identical crop when processed; a burn reads as fire when the front is distance-led (centre → out) with noise only roughening the rim, never noise-led (that made long lightning cracks) (Day 10).
+79. **Check headless frame timing with a screencast running**: without one, headless Chrome may not paint and rAF timings come back empty; also restart the production server after adding files to `public/` (a new favicon 404'd until then) (Day 10).
+
+80. **A site's own loader needs its own "loader lifting" signal**: with the engine loader off (`site.ts` `loader: false`), the engine calls `markFinished()` at mount, so anything on `onSiteReady` (the hero film intro, the entrance) played hidden behind the custom loader. Fire a site event as the loader's wipe STARTS (`site/lib/plate.ts` `onPlateLifting`) and start hero motion from it (Day 11).
+81. **A self-playing film intro must run until the record scroll overtakes it, measured not guessed**: the record curve starts from rest and eases in, so a short intro (to 1.6 s over 4.2 s) finished early and the shown time stood still for ~1 s; probe `scrollY` vs the shown second, and run the intro linearly to the point the scroll reaches at the same moment (here 0 → 2.0 s over 4 s). Give a film's genuinely still opening second only ~0.3 record seconds (Day 11).
+82. **Keep fixed layers inside the viewport, and re-run a reel that comes out 1278×900 before blaming the site**: 1278×900 = a 1440×1014 capture (the headless window, not the emulated 1440×900 page) scaled to fit. It appeared with a fixed layer at `inset: -10%`, with an unclipped record-pointer label, after a broken `href="#"` click, and once with none of these; frame-by-frame JPEG sizes on three re-runs were all 1440×900, so part of it is intermittent in the recorder. Put oversized fixed layers in a `fixed inset-0 overflow-hidden` box anyway, and simply re-record a size fail (Day 11).
+83. **A scripted record pointer follows its target LIVE**: the page keeps scrolling under it, so a target measured at the start of a move is wrong by the time it presses (plan rows and the booking were missed). Resolve the target every frame during the move and stay anchored to it until the next move; build the scripts so everything resolves when they PLAY, not at mount (the cursor element did not exist yet) (Day 11).
+84. **Never `href="#"` on anything the record script clicks**: the smooth-scroll anchor handler ran `querySelector("#")` (console error) and the take broke (wrong reel size). Use `<button type="button">` for in-page actions (Day 11).
+85. **Words never roll letter by letter**: a per-character roll shows half-words mid-change ("QUERLY", "ANNUAL“LY"). Roll digits only; swap words whole: the old word lifts out (0.1 s), THEN the new one clip-wipes in (0.15 s), never both on screen (Day 11).
+86. **Odometer count-ins draw their final value in `?static=1`** (the strips sit on 0 otherwise), and spaces inside an inline-flex number collapse ("2,400SQFT"): render them as non-breaking spaces (Day 11).
+87. **Bottom-aligned sticky gives overlap/hard-cut handovers without GSAP pins**: wrap the two sections, set the outgoing one `position: sticky; top: 100vh − its height`, give the incoming one a higher z and a solid background; for a hard cut, hide the incoming stage until its top reaches the top. Fixed scrubbed overlays then need a z-ladder (overlay between the two sections' z) (Day 11).
+88. **A transition sweep must never leave a mostly blank frame**: five full-screen colour panels staggered 0.06 apart over ~1 s held a near-white frame on camera; overlap them (0.03 apart, each crossing in ~0.2 of the range ≈ 0.6 s) and end on the next section's colour (Day 11).
+89. **A ScrollTrigger that ends at `"max"` toggles off exactly at the page bottom**: the footer pile stopped on the reel's last screen. Start on `onEnter` and stop only `onLeaveBack` (Day 11).
+90. **Veo product shots: use the SAME image as start AND end frame** to lock the camera and the product (it also gives a loopable clip), and do any push-in in code (scroll-driven scale on the video). **Never write "mist" or "fog" in a Veo prompt** (not even as a colour name like "mist-green": Veo turns it into heavy drifting fog); spell out in detail what stays perfectly still and what moves. A start = end clip still pops at the seam (measured 14× a normal frame step), so bake the crossfade loop of lesson 68 (Day 12).
+91. **Veo can't do subtle surface changes between two near-identical frames**: asked for dew beads forming on pixel-aligned dry → dewy skin stills, it invented a thick blob cluster, ran water along the bottom and popped every bead away in one frame. When start and end are pixel-aligned stills, do the transition in code (a soft organic noise-mask reveal of B over A, scroll- or slider-driven, + a light lift on the moving front) (Day 12).
+92. **Gemini/Nano Banana stills carry a small ✦ sparkle mark bottom-right** (and edits can come back shifted ~1–2 px): check every Flow still, paint the mark out (`scripts/clean_mark.py`, original kept as `-raw`), and measure + undo the sub-pixel shift on edit pairs before using them as aligned before/after or light pairs (Day 12).
+93. **Blender 5.x glTF export drops KHR_materials_volume (tint + thickness) unless the "glTF Material Output" node group has an `Occlusion` socket**: the exporter inlines the material otherwise and loses Thickness. An unlinked Occlusion socket exports nothing (Day 12).
+94. **Product renders that read as real glass:** AgX at −1 EV, a dim world for reflections but a bright camera/transmission-only backdrop (Light Path), glass that casts no shadow + an invisible shadow disc for the contact shadow, and the liquid touching the glass (a 0.15 mm air film makes thick walls reflect and the jar look half empty). Liquids stay non-transmissive in the GLB (three.js cannot show transmission inside transmission) (Day 12).
+95. **Live three.js glass costs more than it gives on a light page: a 48-frame Blender turntable (transparent glass, 640² WebP, ~1 MB per product) blended frame to frame looked better and weighs less** than R3F + Draco, and needs no WebGL (Day 12).
+96. **Scroll-driven displacement on text must be a separate, smooth, low-strength wave**: the water's high-frequency ring wave tore the under-water title into shreds; a single soft lens swell (slope well under 1 px/px) bends letters without breaking strokes (Day 12).
+97. **A reveal mask between two photos may only brighten**: where the "after" photo is darker than the "before" (a shadowed corner), clamp it up to the "before" brightness, or the soak paints dark blotches; and even out the "after" photo's own low-frequency shading first (divide by a very soft blur, keep ~25 % of it), or its shadow patches still read as brown blotches mid-soak (Day 12).
+98. **Light glides added for the record check stay faint, wide, white and behind content** (z-index under the pane's text, ≈ 0.2 alpha peak, long falloff): strong tinted bands read as teal smears; a full-width `backdrop-filter` stalled the recorder for ~0.5 s, so frost is a static texture (Day 12).
+99. **Travelling drops route through empty space only**: plan every leg's path against the text boxes (split/merge in gaps, fade before text arrives), and make section-drawn copies of the traveller (handle, full stop) appear only as it lands in them, never two at once (Day 12).
+100. **Swap product titles whole (crossfade), never with a left-to-right clip wipe**: a wipe briefly shows a lone first letter ("D") on camera (Day 12).
+
+101. **Vehicles: a Flow master shot beats procedural Blender and image-to-3D.** Two Blender passes (B1, a v2 measured from M2) stayed visibly CG; TRELLIS.2 (MIT, one input image only) came back with dented panels (clear in its normal-map previews) and baked silver paint. Product sections were built from M1 + pixel-aligned Nano Banana paint/trim edits sharing M1's cut-out mask (shift ≤ 0.3 px measured), so colour swaps need no turntable (Day 13).
+102. **Scrub videos: every frame a keyframe** (H.264 `-g 1` + VP9 `-g 1`, 1600×900 covers 1440×900) seeks smoothly both ways at ~11 MB for 8 s; keep films in `public/videos/` so `npm run check` sees them, and bake a 12-frame crossfade into any start = end loop (Day 13).
+103. **A value read from scroll speed needs a shaped record scroll:** put record stops inside the pin (slow → fast → slow) so the reel shows the climb, and tune the factor below the clamp (85 hit the cap; 0.068 km/h per px/s gave 18 → 82 → 21) (Day 13).
+104. **Zoom-through hand-over (X4):** make the hero a 200vh pin that zooms into the next film's first frame, pull the next section up one screen and keep its stage `visibility: hidden` until its top reaches the top, then it takes over on the identical frame (Day 13).
+105. **GSAP adds an inline `translateX(%)` as pixel `x` to its own `xPercent`:** the slat sweep ended exactly on screen. Never give a GSAP-moved element an inline transform; set `x: 0` explicitly (Day 13).
+106. **Scrub triggers inside a sticky overlap wrapper measure wrong:** play those transitions on the clock from `onEnter` (Day 13).
+107. **Canvas `shadowBlur` on wide strokes stalls frames (~300 ms, the night tween jumped):** draw glow as a wide low-alpha stroke under the core on a 1× canvas, erase soft holes with a radial `destination-out` instead of a clip (no hard edge) (Day 13).
+108. **Thin moving things never pass frame-diff:** a loader line drawing, faint trails and a sunlight glint all measured under 0.15. Add a broad soft light band, draw trails wide, and start timed reveals while the section is still arriving (Day 13).
+109. **Check `.next/BUILD_ID` before `npm start`:** a TypeScript error (`error TS…`, lowercase) failed the build, my grep for "Error" missed it, and the reel reported "capture broke off after 0.1 s" because no server was running (Day 13).
+110. **Scan page width with motion ON at several depths:** elements parked off screen after an animation (a streak head at left 112 %, a footer scaled 1.12) made the page 1526 px wide although `body` clips; clip them where they live (Day 13).
+111. **After a scripted press that launches a fly-in, keep the record pointer still on the button until the object lands, then hide it:** moving toward the target passed over the next card and flashed its label (Day 13).
+112. **Flow stills may carry no visible ✦:** check the corner with a high-pass first; a blur fill across a dark/light edge painted a grey disc into A1 (reverted) (Day 13).
+113. **Blender is a last resort, one try only:** Day 13 spent 3 Blender attempts plus a TRELLIS image-to-3D run on the vehicle and used none; the Flow master shot + code motion won every time. Default to Flow + code; Blender only for a simple smooth object (bottle, can, jar, glass, perfume, simple box) when a turntable is the signature, never for vehicles, complex gadgets, mechanical close-ups, food, people or places. Max one ~30 min pass, judge it side by side with the Flow master and drop it at once if it looks less real; ask before a second pass (Day 13).
+
+114. **Veo cross-dissolves into its end frame when start and end frames are different shots**: V2 (lobby → pool) ghosted into a different pavilion from 6.3 s (double palms, a new roof). Check the last seconds on a contact sheet and trim before the dissolve; the clean part is the film (Day 14).
+115. **Flow edits need the attachment thumbnail visible in the prompt box**, or Flow makes a new scene instead of editing the image (Day 14).
+116. **Veo burns any mark in its start frame into every frame at a fixed spot**: V1, V2 and V4 all carried A-still ✦ marks because they were made from uncleaned stills. Give Veo the cleaned still; otherwise one symmetric crop (1572×884 at x 174 of 1920×1080) removes both the ✦ and the Veo mark, scaled to 1600×900 (Day 14).
+117. **Veo stretches a 2752×1536 still ~0.75 % vertically** (its aspect is not exactly 16:9): before handing a still over to a film on the identical frame, crop the still with separate x/y scales and fit the factor against film frame 0 (here ≤ 0.35 px) (Day 14).
+118. **On high-contrast texture (bricks, a sand edge) paint the ✦ out with a pixel clone, not smooth + texture**, sourced along the edge direction and never from the other star or an object edge (the first fills copied a lantern, a rope band and star outlines) (Day 14).
+119. **`object-position` cannot move an image that exactly fills its box**: the dining photo "drift" did nothing and the pin failed frame-diff. Drift with a transform (scale 1.12 + translate) (Day 14).
+120. **Swap events must be announced**: the nav swapped its "Now:" word directly, so the cursor tag (listening for an event) never fired. Any component that changes shared state dispatches an event others can hear (Day 14).
+121. **Cursor tags and labels test their spot against text** (elementFromPoint at a few points, eight candidate positions): a fixed offset sat on "₹9,500 for two". Park the record pointer on something meaningful (a button, the opening shutter), never on empty margins (Day 14).
+122. **Text with a moving light-leak gradient can vanish on a mid-tone photo**: a near-white band erased letters on the orange sand. Keep the band narrow and darker than the surroundings, and check the last frame (Day 14).
+123. **Reveals must be made of real material**: "shutters" drawn as thin lines on page-colour panels read as photos that failed to load. Use opaque painted louvres with shadow gaps, let the photo glow through, and never leave a panel looking empty (Day 14).
+124. **Coral/orange accents under white text fail AA** (#E4573D = 3.7:1): keep a deeper shade for fills behind white text (#C8432B, 4.9:1) and a slightly deeper ink for big italic words on colour bands (≥ 3:1) (Day 14).
+125. **A new day folder may carry a stale sites log** (Day 14's copy stopped at Day 11): sync `docs/SITES-LOG.md` from the previous day at Round 0, and copy it back to `showreel-kit/docs` at the end of every day (Day 14).
+126. **Hovers on camera come from the engine's record cursor, never a per-site fake pointer:** mark cards, swatches, buttons and Add to cart with `data-hover-demo` (`="click"` to press); it sends the real mouse events and `.is-hover` (every `:hover` rule matches it), stays off headlines and rides with its target. Every reel needs ≥ 3 hover moments (Kit, 2026-10-09).
+127. **Round 0 reference board, per section:** section list (user OK) → search sheet → the user's inbox ("mine") → filled to 3 options per section from allowed live sites + 1 clip → the user picks 1 per section → DESIGN.md names each section's pick, mixes ideas, never copies a layout (Kit, 2026-10-09).
+128. **Pinterest/Dribbble/Behance are browsed by hand only (their terms ban automated access)** (Kit, 2026-10-09).
+129. **The user's inbox rarely covers every section: build 2–3 full-page layout mockups instead of per-section picks.** Any reference may inspire any section (a café product card shaped the jewellery option card). Mockups are static HTML at 1440 with code-drawn placeholders (no AI images before approval), each section labelled with its reference or "ours"; render full-page and check before showing (Day 16: a shared CSS rule hit the placeholder drawings, and an unpositioned footer threw its wordmark into the hero) (Day 16).
+
+## Day 16 · Kanak Jewels
+130. **A paused GSAP `fromTo` paints its start state at once** (`immediateRender`): the seal's shock ring showed on an empty screen ~1 s before the stamp. In timelines built paused for an on-enter play, give every `fromTo` after the first `immediateRender: false`, and trigger on the element itself (`trigger: "[data-seal]"`, `center 72%`) (Day 16).
+131. **Record stops run in page order**: a "halfway" marker placed before the element that carries the section's own stop ran first, so the page zoomed, then jumped back to the top. Put a section's first stop as its first child (Day 16).
+132. **Zoom into a detail** (camera into a gem, a logo, a dial): scale around the detail's measured centre (`transform-origin`), on a log scale (`scale = MAX^t`, steady speed), drift it to the screen centre, and before the still blurs (~2×) hand over to a close-up still placed pixel-matched by measuring the detail in both images (centre + size); a soft round mask hides the close-up's frame (Day 16).
+133. **Melt into the next section without an empty frame**: pull the next pinned band up one screen under the hero (see-through until its pin starts) and start its content rising while the colour is still melting; a melt that finishes first leaves a beat of plain colour (Day 16).
+134. **Switching sets: push, never crossfade.** Two products crossfading read as a pale ghost frame; slide the old out and the new in at full strength just after the colour turns. Giant words must fit the screen (size each word): a word wider than the screen shows cut ends that read as a second copy ("DAILY WEARILY WEAR"), and the new word enters only after the old one has left (Day 16).
+135. **Decode big images right after load** (`img.decode()` for every page image): the clock's 12 pieces stalled the recorder ~0.4 s as the pin arrived. Never animate `filter: blur()` on a stamp either (a 0.5 s stall) (Day 16).
+136. **Fly-to-bag:** route the flying copy through measured empty space (between the title and the price, then along the top edge), carry it in a ringed token (a copy of a necklace flying over the same necklace is invisible), land it while its section is still on screen, and let the Bag own the count through one event (`kj:add`) so every Add to bag bumps it (Day 16).
+137. **"size 1278×900" from `npm run reel` is a capture race** (the headless window kept its spare height): re-run before changing the site (Day 16).
+
+## Day 17 · Pulp Fresh
+138. **Hand-scrolled reels: every scroll-linked motion is a pure function of the scroll position** (any speed, a stop or scrolling back gives the same frame), and nothing depends on the record cursor; build-your-own picks are made by the scroll and undone when scrolling back, clicks still work (Day 17).
+139. **A page-wide travelling object replaces each section's own copy** (an empty slot until the hand-over), measures its waypoints live from anchor elements every frame, routes only through free space and hides in `?static=1` (F9, Day 17).
+140. **Build-your-own layers stay readable after the last pick**: three separate layers, never blended into one colour (Day 17).
+141. **Special seams only at 2–3 key changes** (the juice-pour edge, X96), not at every boundary (Day 17).
+
+## Day 18 · Cairnline Treks
+142. **Check the plan's brand name before using it**: Day 18's belonged to a real travel company and Day 20's clashed with a registered apparel trademark. Rename to a fictional name and never use the old one anywhere (Day 18, Day 20).
+143. **Giant names over a film need a clear sky band**: lower each film by a measured, time-based shift and continue its own sky colour above it; pick the clip's seconds where the sky is clear (Day 18).
+144. **Cloud seams**: noise-rendered cumulus, 3 layers each with its own size, height, speed and offset, shown only while the boundary crosses the screen; dark seams use soft, low-contrast mist (X97, Day 18).
+145. **A tall stitched image reads soft when stretched**: show it as a centred column at native width (1150 px), not 1.4× full width (Day 18).
+146. **A loupe crops from the 2K source photo**, never from the display-size image (Day 18).
+147. **A cursor pill hides near buttons, links and bars**, and the kit's cursor ring is turned off when the site has its own cursor (Day 18).
+148. **A flying object on the cover casts no contact shadow**: `npm run cover -- --no-contact` (Day 18).
+
+## Video-first engine
+149. **Keyframe stills join the clips, so all videos run in one batch**: the end keyframe of V(n) is the start keyframe of V(n+1); generate all stills first, then every clip together.
+150. **Claude Code never writes Flow/Veo prompts**: the director gives them to the user; Claude only records the pasted ones under "Prompts (as run)" in DESIGN.md.
+151. ~~Repo-size / Git LFS rule~~: replaced by lesson 161.
+152. **Flow edits attach ONE image only** (the master still): variants stay pixel-aligned. A variant that can be built from cut-outs (e.g. a three-up line-up) is made in code (`scripts/lineup.py`), not in Flow.
+153. **Check every brand name online in Round 0**: the plan's name and a shortlist name both clashed with real brands on Day 19 (Lumen Phone became Halden).
+154. **Day 20 asset rules:** Claude never makes cut-outs (the user supplies any PNG); run `clean-mark` on a whole batch in one go (originals in `raw/_orig`) without viewing each image; replies stay 2-3 lines.
+155. **Cloud sessions:** the public day repo never holds reference screenshots; they go in the private repo `triozen-tech/refs` under `day<N>/` (see `docs/CLOUD.md`).
+
+## Day 19 · Halden (round 2–3)
+156. **One continuous film beats stacked stages**: a single sticky stage scrubbing V1..V12 as one timeline replaced the separate pinned stages after review (no seams, one scroll length to tune).
+157. **A cut-out behind a big word only works while the phone is still**: moving video and a still cut-out drift apart, so the word-behind-phone layer shows only on held frames (hero start, footer end).
+158. **Cards must match what is on screen**: time every card window against the actual frames (use the `CARD` table), not the planned clip length.
+159. **Price cards need a hold**: a still between V11 and V12 (~6% of the scroll) gives the cards time to be read.
+160. **The cover badge is part of the locked spec** (empty black box for Instagram's view count); if a cover must have no empty box, paint it out after `npm run cover`, don't edit the script.
+161. **No file-size limits; best output wins.** Keep full-resolution stills, WebP q90 or higher and full-quality frames; never shrink assets to hit a budget. `npm run assets` and `film-frames` no longer warn or fail on size (no 50 MB LFS rule, no 12 MB per clip). Performance is handled by lazy loading and releasing frames off screen, not by smaller files.
+
+## Day 24 · Marigold Noir
+162. **The kit cursor's label disc sits on the button text**: offset it with `margin` (GSAP writes `translate`/`scale` inline, so CSS `translate` is ignored), up and right of the pointer, smaller, and only when it has a label (`:has(span:not(:empty))`) (Day 24).
+163. **Flow mark over a ribbon or edge**: `clean-mark`'s texture borrow turns a nearby edge into a ghost copy. Check the corner at 3× after cleaning; if it ghosts, fill from wood or background above instead. Keep the old original under another name in `raw/_orig`, or the backup is skipped (Day 24).
+164. **A pinned card can morph into a buy box as a scrubbed rect lerp** (left/top/width/height by scroll) instead of Flip: stays reversible and exact at any scroll speed (Day 24).
+165. **A section that follows a fade-through-black needs its black to clear early**: a black overlay tied to late arrival left a 900 px black gap under the gold band; clear it in the first 40% (Day 24).
+166. **Small label text is 12px, not 11px** (eyebrows, slider labels), per Round 5 readability (Day 24).
+167. **Cover object**: a real album photo cut out with rembg works; put it above the empty top bar (`--object-cx 900 --object-bottom 610`) so it never hides nav links (Day 24).
+
+## Day 25 · Tidemark Surf School
+168. **Small text is 14px minimum** (eyebrows, tags, captions, cites, readouts); 12px fails the Round 5 scan (replaces 166). Scan with a script: load `?static=1`, scroll in steps, read every visible text node's size and colour, and estimate contrast against the pixels around it (4.5:1, 3:1 for text ≥ 24px).
+169. **White type over a pale film needs a scrim, not a text shadow**: a dawn-sky hero measured 1.8–2.6:1. A deep-teal radial pool (about .6 at the centre) behind the title plus a bottom gradient lifts it past 3:1 without hiding the film.
+170. **Dimmed "inactive" rows break contrast**: a list that sits at 50% opacity until its row is active failed at 2–3:1. Keep inactive rows at about .95 and show the active one with colour and a background instead.
+171. **Photo captions get their own dark foot gradient** (`figure::after`), then 14px white text; a text shadow alone gave 2.3:1.
+172. **Selected and hover must not share a colour**: selected = solid deep colour + tick, hover = light tint + outline. The "Your session" box reads the same state (`near`) as the selected slot, so the two cannot disagree.
+173. **Park the record cursor with `data-hover-at="fx,fy"` on empty card area** (the + corner, the price column) and check every demo in a recorded frame: the default centre lands on the last word of short text.
+174. **A GSAP loader that waits for assets**: use `.call(() => { if (!ready) tl.pause() }, [], t)` at the lift point and resume when ready. `addPause` plus an early `resume()` is a no-op, so the timeline pauses forever and the page never appears (Day 25: caught because the reel script never saw the loader leave).
+175. **In a CDP screencast a hover frame can show a transition midway** (text looks washed out). Judge a state from a settled still, not from one reel frame.
+
+## Day 26 · Kilnfield Ceramics
+176. **Constant-speed record mode: hover demos must fit the scroll window.** Each demo needs about 1.5 s of glide plus hold before its target leaves the band; at 350 px/s a click demo placed after another one got skipped. Keep holds ≤ 0.9 s, set `data-hover-at`, then check `window.__recordHovers` in a run.
+177. **A fixed nav or a collapsed button can't be a demo target**: the cursor skips what is off screen or hidden when it is picked. Demo the thing inside the open row instead.
+178. **A crop beats a patch for a video smudge**: a fixed-size window over a larger canvas removed the mark with no repainting.
+179. **A decorative leading edge (the wipe's rust strip) must slide off at the end**, or it stays as a sliver on the page edge. Check section seams in `?static=1`.
+180. **A missing favicon is the usual lone 404**: add `app/icon.svg`.
+
+## Day 27 · Vesperline Perfume Atelier
+181. **Glass cut-outs need the body made see-through**: a rembg cut-out of a glass bottle keeps an opaque grey body that looks pasted on. Make the glass alpha low and keep the highlights and the cap solid so it works on both light and dark bands (Day 27).
+182. **Probe the traveller route again after any timing change**: run the overlap probe over the whole page (text and the nav pill, 100 px steps, 1440×900) after every round that moves holds or record times. Probe against the nav pill, not the full-width header (Day 27).
+183. **An anchored element must not be transformed by GSAP**: the traveller measures anchors in page coordinates, so cards use clip-path only, sizes use caption-only rises and the atelier uses blur only (Day 27).
+184. **Animating a CSS colour needs `@property`**: register `--t1`/`--t2` as `<color>`, otherwise `transition` on a custom property swaps instantly (Day 27 finder tint).
+185. **hue-rotate direction depends on the base colour**: a lilac bottle with `hue-rotate(-45deg)` goes blue, not rose. Check each swatch on the real bottle (Rose +60, Smoke -30) (Day 27).
+186. **A sticky buy box works under `overflow-x: clip`** but not under `overflow: hidden`. Give its section a record hold so the box is on screen while the swatch and Add demos play (Day 27).
+187. **Retune the reel from dead time first**: shorten glides and loader tail before touching holds; keep the pinned scroll length exact (37.8 s to 34.5 s with the Dry-down untouched) (Day 27).
+188. **Cover: a tall object at the default spot hides the nav button**: nudge it with `--object-cx 880` so it sits in the card's empty right corner (Day 27).
+
+189. **A loader that hands over to the hero removes the jump**: draw the loader's bottle at the hero bottle's exact size and spot (same `top`, `height`), swap to one whole image before the lift, fade the traveller in under it and ease the float in (`intro.bob`) instead of an offset intro. Measured: under 1 px apart at hand-over (Day 27).
+190. **A loader that counts real progress needs a cap and a hard stop**: the count rises with fonts and the hero image, goes ×4 faster after 6 s, and a 10 s timeout forces the lift. Time the whole sequence in `?record=1` (rAF observer for the `[data-loader]` gone time), not by feel: the first draft was 3.63 s, over the 3.5 s limit (Day 27).
+191. **Reordering sections means re-probing the traveller**: hero → next section became a long glide and the bottle slid up under the nav pill. Clamp the drawn bottle's top below the nav (`NAV_CLEAR`) and re-run the nav and text probe after every reorder (Day 27).
+192. **Split layered glass by region, not by alpha**: a semi-transparent liquid drawn twice doubles its alpha. Clip the empty and full layers complementarily along the wave line (Day 27).
+193. **Cover: nudge the object out of the nav button** with `--object-cx 885` and check the Visit button in the shot (Day 27).
